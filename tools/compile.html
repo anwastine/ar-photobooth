@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Compile MindAR target</title>
+<style>body{font-family:system-ui;padding:24px;background:#0b2545;color:#f6efe0}pre{background:#061428;padding:12px;border-radius:8px}</style>
+<h1>Compile <code>assets/overlay.jpg</code> → <code>targets/overlay.mind</code></h1>
+<p>Runs MindAR's feature compiler in the browser. Add <code>?post=1</code> to save through the dev server, otherwise a download starts.</p>
+<pre id="log">starting…</pre>
+<script type="module">
+import "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js";
+const log = m => { document.getElementById('log').textContent += '\n' + m; console.log(m); };
+(async () => {
+  const img = new Image(); img.crossOrigin = 'anonymous'; img.src = '../assets/overlay.jpg'; await img.decode(); log(`image ${img.naturalWidth}x${img.naturalHeight}`);
+  const compiler = new window.MINDAR.IMAGE.Compiler();
+  const t0 = performance.now();
+  await compiler.compileImageTargets([img], p => log('progress ' + p.toFixed(1) + '%'));
+  const buf = await compiler.exportData();
+  log(`compiled ${buf.byteLength} bytes in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  if (new URLSearchParams(location.search).has('post')) {
+    const r = await fetch('/save-target', { method: 'POST', body: buf }); log('saved: ' + await r.text());
+    document.title = 'DONE';
+  } else {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf])); a.download = 'overlay.mind'; a.click(); log('download started');
+  }
+})().catch(e => log('ERROR ' + e.message));
+</script>

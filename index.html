@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2545">
+<title>AR Photobooth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  :root{
+    --navy:#0b2545; --navy2:#13315c; --gold:#c9a227; --gold2:#e8c874; --cream:#f6efe0; --ink:#0a1a33; --muted:#8a94a6;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0;height:100%;background:radial-gradient(1200px 800px at 50% -10%, #1b3f73 0%, var(--navy) 45%, #061428 100%);color:var(--cream);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column;min-height:100dvh}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .logo{width:42px;height:42px;border-radius:50%;background:conic-gradient(from 200deg,var(--gold),var(--gold2),var(--gold));display:grid;place-items:center;color:var(--navy);font-weight:800;font-size:18px;box-shadow:0 0 0 2px rgba(255,255,255,.15) inset}
+  .brand h1{font-family:'Playfair Display',serif;font-size:22px;margin:0;letter-spacing:.3px}
+  .brand small{display:block;font-size:11px;color:var(--gold2);letter-spacing:2px;text-transform:uppercase;font-family:Inter}
+  .iconbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:var(--cream);border-radius:12px;padding:9px 12px;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .iconbtn:hover{background:rgba(255,255,255,.14)}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 24px;gap:18px}
+  section{width:100%;max-width:960px;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .frame{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 3px var(--gold),0 0 0 6px var(--navy2)}
+  .frame video,.frame img,.frame canvas{width:100%;height:100%;object-fit:cover;display:block}
+  .frame video.mirror{transform:scaleX(-1)}
+  .frame .countdown{position:absolute;inset:0;display:grid;place-items:center;font-family:'Playfair Display',serif;font-size:min(38vw,260px);font-weight:700;color:#fff;text-shadow:0 10px 40px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .15s}
+  .frame .countdown.show{opacity:1}
+  .frame .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .frame .flash.go{animation:flash .55s ease-out}
+  @keyframes flash{0%{opacity:1}100%{opacity:0}}
+  .frame .guide{position:absolute;inset:0;pointer-events:none;border:1px dashed rgba(255,255,255,.18);border-radius:18px;margin:5%}
+  .frame .msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;color:var(--cream);background:rgba(6,20,40,.85);font-size:16px;line-height:1.5}
+  .frame .msg b{font-family:'Playfair Display',serif;font-size:22px;display:block;margin-bottom:8px}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .btn{appearance:none;border:0;border-radius:999px;padding:16px 28px;font-size:17px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:transform .08s ease,box-shadow .2s;font-family:Inter}
+  .btn:active{transform:translateY(1px) scale(.99)}
+  .btn.primary{background:linear-gradient(180deg,var(--gold2),var(--gold));color:var(--navy);box-shadow:0 10px 30px rgba(201,162,39,.35);font-size:20px;padding:20px 40px}
+  .btn.primary:hover{box-shadow:0 14px 40px rgba(201,162,39,.5)}
+  .btn.ghost{background:rgba(255,255,255,.08);color:var(--cream);border:1px solid rgba(255,255,255,.16)}
+  .btn.ghost:hover{background:rgba(255,255,255,.14)}
+  .btn.ok{background:#1f8a5b;color:#fff;box-shadow:0 10px 30px rgba(31,138,91,.35)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .card-wrap{width:min(100%,440px);background:#fff;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.2);overflow:hidden}
+  .card-wrap img{display:block;width:100%}
+  .hint{color:var(--muted);font-size:13px;text-align:center;max-width:560px;line-height:1.5}
+  .hint a{color:var(--gold2)}
+  kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:1px 6px;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:rgba(201,162,39,.14);border:1px solid rgba(201,162,39,.35);color:var(--gold2);border-radius:999px;padding:5px 12px;font-size:12px;letter-spacing:.5px}
+  dialog{border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100% - 32px);background:#0f2a4f;color:var(--cream);box-shadow:0 40px 120px rgba(0,0,0,.7)}
+  dialog::backdrop{background:rgba(3,10,22,.7);backdrop-filter:blur(4px)}
+  dialog form{padding:22px 22px 18px;display:flex;flex-direction:column;gap:14px}
+  dialog h2{margin:0 0 4px;font-family:'Playfair Display',serif;font-size:22px}
+  label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#c9d3e3}
+  label.f input[type=text],label.f input[type=url],label.f input[type=number],label.f select{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:10px;padding:10px 12px;font-size:15px;font-family:Inter}
+  label.row{display:flex;align-items:center;gap:10px;font-size:14px;color:#c9d3e3}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .dlg-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+  #printArea{display:none}
+  @media print{
+    @page{size:4in 6in;margin:0}
+    html,body{background:#fff !important;height:auto}
+    body>*{display:none !important}
+    #printArea{display:block !important;position:fixed;inset:0;width:4in;height:6in}
+    #printArea img{width:4in;height:6in;display:block}
+  }
+  @media (max-width:640px){
+    .brand h1{font-size:18px}
+    .btn.primary{padding:16px 28px;font-size:18px}
+    header .iconbtn span{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">AR</div>
+    <div><h1>AR Photobooth</h1><small>Click · Print · Come alive</small></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a class="iconbtn" id="arLink" href="ar" target="_blank" title="Open the AR viewer">✨ <span>AR viewer</span></a>
+    <button class="iconbtn" id="btnFull" title="Fullscreen (kiosk)">⛶ <span>Fullscreen</span></button>
+    <button class="iconbtn" id="btnSettings" title="Settings">⚙ <span>Settings</span></button>
+  </div>
+</header>
+
+<main>
+  <!-- 1. LIVE CAMERA -->
+  <section id="live">
+    <div class="frame">
+      <video id="video" autoplay playsinline muted class="mirror"></video>
+      <div class="guide"></div>
+      <div class="countdown" id="countdown"></div>
+      <div class="flash" id="flash"></div>
+      <div class="msg" id="camMsg"><div><b>Starting camera…</b>Allow camera access when your browser asks.</div></div>
+    </div>
+    <div class="controls">
+      <button class="btn ghost" id="btnUpload">🖼 Upload photo</button>
+      <button class="btn primary" id="btnShoot">📸 Click Picture</button>
+      <button class="btn ghost" id="btnFlip" title="Switch camera">🔄</button>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+    <div class="hint">Press <kbd>Space</kbd> or tap the button. A countdown runs, then the photo is taken. <span class="pill" id="pillTitle"></span></div>
+  </section>
+
+  <!-- 2. REVIEW -->
+  <section id="review" hidden>
+    <div class="frame"><img id="reviewImg" alt="Your photo"></div>
+    <div class="controls">
+      <button class="btn ghost" id="btnRetake">↩ Retake</button>
+      <button class="btn ok" id="btnSubmit">✓ Submit</button>
+    </div>
+    <div class="hint">Happy with it? Submit to add the AR banner below your photo.</div>
+  </section>
+
+  <!-- 3. CARD -->
+  <section id="card" hidden>
+    <div class="card-wrap"><img id="cardImg" alt="Your print card"></div>
+    <div class="controls">
+      <button class="btn primary" id="btnPrint">🖨 Print</button>
+      <button class="btn ghost" id="btnDownload">⬇ Download</button>
+      <button class="btn ghost" id="btnNew">📸 New photo</button>
+    </div>
+    <div class="hint">Prints on 4×6 in (10×15 cm). Scan the QR on the print with any phone to open the AR viewer and watch the banner come alive.</div>
+  </section>
+</main>
+
+<dialog id="settings">
+  <form method="dialog">
+    <h2>Booth settings</h2>
+    <label class="f">Event title (printed on card)<input type="text" id="sTitle" placeholder="e.g. Convocation 2026" maxlength="40"></label>
+    <label class="f">Subtitle<input type="text" id="sSub" placeholder="e.g. Sailing towards new horizons" maxlength="60"></label>
+    <div class="grid2">
+      <label class="f">Countdown (seconds)<input type="number" id="sCount" min="0" max="10" step="1"></label>
+      <label class="f">Photo shape<select id="sAspect"><option value="4:3">4:3 (recommended)</option><option value="1:1">Square</option><option value="3:2">3:2</option></select></label>
+    </div>
+    <label class="f">AR viewer link (encoded in the QR)<input type="url" id="sAr" placeholder="https://your-site.vercel.app/ar"></label>
+    <label class="row"><input type="checkbox" id="sDate"> Print today's date</label>
+    <label class="row"><input type="checkbox" id="sMirror"> Mirror the saved photo (selfie style)</label>
+    <label class="row"><input type="checkbox" id="sQr"> Print QR code for the AR viewer</label>
+    <div class="dlg-actions">
+      <button class="btn ghost" value="cancel" type="button" id="sCancel">Cancel</button>
+      <button class="btn ok" value="ok" id="sSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="printArea"><img id="printImg" alt=""></div>
+
+<script>
+(() => {
+  // ---------- settings ----------
+  const DEF = { title: 'AR Photobooth', sub: 'Click · Print · Watch it come alive', count: 3, aspect: '4:3', ar: '', date: true, mirror: false, qr: true, facing: 'user' };
+  const S = Object.assign({}, DEF, JSON.parse(localStorage.getItem('booth.settings') || '{}'));
+  const save = () => localStorage.setItem('booth.settings', JSON.stringify(S));
+  const arUrl = () => S.ar || (location.origin + '/ar');
+  const $ = id => document.getElementById(id);
+  const pill = $('pillTitle'); const paintPill = () => { pill.textContent = S.title; $('arLink').href = arUrl(); };
+  paintPill();
+
+  const dlg = $('settings');
+  $('btnSettings').onclick = () => {
+    $('sTitle').value = S.title; $('sSub').value = S.sub; $('sCount').value = S.count; $('sAspect').value = S.aspect;
+    $('sAr').value = S.ar; $('sDate').checked = S.date; $('sMirror').checked = S.mirror; $('sQr').checked = S.qr;
+    dlg.showModal();
+  };
+  $('sCancel').onclick = () => dlg.close();
+  $('sSave').onclick = (e) => {
+    S.title = $('sTitle').value.trim() || DEF.title; S.sub = $('sSub').value.trim(); S.count = Math.max(0, Math.min(10, +$('sCount').value || 0));
+    S.aspect = $('sAspect').value; S.ar = $('sAr').value.trim(); S.date = $('sDate').checked; S.mirror = $('sMirror').checked; S.qr = $('sQr').checked;
+    save(); paintPill(); applyAspect();
+  };
+  $('btnFull').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(()=>{});
+
+  const ratio = () => { const [a,b] = S.aspect.split(':').map(Number); return a/b; };
+  const applyAspect = () => document.querySelectorAll('.frame').forEach(f => f.style.aspectRatio = S.aspect.replace(':','/'));
+  applyAspect();
+
+  // ---------- camera ----------
+  const video = $('video'); let stream = null;
+  async function startCam() {
+    stopCam();
+    $('camMsg').style.display = 'grid';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio:false, video: { facingMode: S.facing, width: { ideal: 1920 }, height: { ideal: 1440 } } });
+      video.srcObject = stream; await video.play();
+      video.classList.toggle('mirror', S.facing === 'user');
+      $('camMsg').style.display = 'none';
+    } catch (err) {
+      $('camMsg').innerHTML = `<div><b>Camera not available</b>${err.name === 'NotAllowedError' ? 'Camera permission was denied. Allow it in the browser and reload.' : 'No camera found or it is in use. You can still upload a photo.'}<br><small style="color:#8a94a6">${err.name}</small></div>`;
+    }
+  }
+  function stopCam(){ if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+  $('btnFlip').onclick = () => { S.facing = S.facing === 'user' ? 'environment' : 'user'; save(); startCam(); };
+
+  // ---------- capture ----------
+  const show = id => { ['live','review','card'].forEach(s => $(s).hidden = s !== id); };
+  let photo = null; // canvas of the cropped photo
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let busy = false;
+  async function shoot() {
+    if (busy || !stream) return; busy = true;
+    const cd = $('countdown');
+    for (let n = S.count; n > 0; n--) { cd.textContent = n; cd.classList.add('show'); await sleep(1000); }
+    cd.classList.remove('show'); cd.textContent = '';
+    $('flash').classList.remove('go'); void $('flash').offsetWidth; $('flash').classList.add('go');
+    photo = cropToRatio(video, video.videoWidth, video.videoHeight, ratio(), S.facing === 'user' && S.mirror);
+    $('reviewImg').src = photo.toDataURL('image/jpeg', .92);
+    show('review'); busy = false;
+  }
+  function cropToRatio(src, sw, sh, r, mirror) {
+    let cw = sw, ch = Math.round(sw / r); if (ch > sh) { ch = sh; cw = Math.round(sh * r); }
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch; const x = c.getContext('2d');
+    if (mirror) { x.translate(cw, 0); x.scale(-1, 1); }
+    x.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, 0, 0, cw, ch);
+    return c;
+  }
+  $('btnShoot').onclick = shoot;
+  document.addEventListener('keydown', e => { if (e.code === 'Space' && !$('live').hidden && !dlg.open) { e.preventDefault(); shoot(); } });
+  $('btnUpload').onclick = () => $('fileInput').click();
+  $('fileInput').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
+    photo = cropToRatio(img, img.naturalWidth, img.naturalHeight, ratio(), false);
+    $('reviewImg').src = photo.toDataURL('image/jpeg', .92); show('review'); e.target.value = '';
+  };
+  $('btnRetake').onclick = () => show('live');
+  $('btnNew').onclick = () => show('live');
+
+  // ---------- compose the 4x6 card ----------
+  const overlay = new Image(); overlay.src = 'assets/overlay.jpg';
+  async function compose() {
+    await Promise.all([overlay.decode(), document.fonts.load('700 64px "Playfair Display"'), document.fonts.load('600 30px Inter'), document.fonts.load('400 26px Inter')]);
+    const W = 1200, H = 1800, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+
+    // photo block: 1120 wide, height by ratio, top margin 40
+    const pw = 1120, ph = Math.round(pw / ratio()), px = 40, py = 40;
+    // banner sits so that its artwork starts ~30px below the photo (the banner has ~109px of white above the artwork)
+    const bw = W, bh = Math.round(W * overlay.naturalHeight / overlay.naturalWidth); // 400
+    const by = py + ph + 30 - Math.round(bh * 0.27);
+    x.drawImage(overlay, 0, by, bw, bh);
+
+    // photo frame
+    x.save(); x.shadowColor = 'rgba(11,37,69,.25)'; x.shadowBlur = 24; x.shadowOffsetY = 10; x.fillStyle = '#fff'; x.fillRect(px, py, pw, ph); x.restore();
+    x.drawImage(photo, px, py, pw, ph);
+    x.lineWidth = 8; x.strokeStyle = '#c9a227'; x.strokeRect(px + 4, py + 4, pw - 8, ph - 8);
+    x.lineWidth = 2; x.strokeStyle = '#0b2545'; x.strokeRect(px + 12, py + 12, pw - 24, ph - 24);
+
+    // footer
+    let fy = by + bh + 10; // below banner artwork
+    const footH = H - fy;
+    x.textAlign = 'center'; x.fillStyle = '#0b2545';
+    x.font = '700 62px "Playfair Display"'; fitText(x, S.title, W - 120, 62, '700', '"Playfair Display"'); x.fillText(S.title, W / 2, fy + 70);
+    if (S.sub) { x.font = '500 28px Inter'; x.fillStyle = '#8a6d1a'; fitText(x, S.sub, W - 160, 28, '500', 'Inter'); x.fillText(S.sub, W / 2, fy + 118); }
+    // gold rule
+    x.fillStyle = '#c9a227'; x.fillRect(W / 2 - 90, fy + 142, 180, 3);
+    if (S.qr && footH > 330) {
+      const qs = Math.min(230, footH - 300 + 120);
+      const qy = fy + 170;
+      drawQR(x, arUrl(), W / 2 - qs / 2, qy, qs);
+      x.fillStyle = '#0b2545'; x.font = '600 26px Inter'; x.fillText('Scan · point your camera at the banner · watch it come alive', W / 2, qy + qs + 46);
+      x.fillStyle = '#8a94a6'; x.font = '400 20px Inter'; x.fillText(arUrl().replace(/^https?:\/\//, ''), W / 2, qy + qs + 80);
+    } else {
+      x.fillStyle = '#0b2545'; x.font = '600 26px Inter'; x.fillText('Open the AR viewer and point it at this banner', W / 2, fy + 200);
+    }
+    if (S.date) { x.fillStyle = '#8a94a6'; x.font = '500 22px Inter'; x.textAlign = 'right'; x.fillText(new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }), W - 40, H - 30); }
+    return c;
+  }
+  function fitText(x, text, maxW, size, weight, family) {
+    while (size > 18 && x.measureText(text).width > maxW) { size -= 2; x.font = `${weight} ${size}px ${family}`; }
+  }
+  function drawQR(x, text, ox, oy, size) {
+    const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+    const n = qr.getModuleCount(), quiet = 2, cell = size / (n + quiet * 2);
+    x.fillStyle = '#fff'; x.fillRect(ox, oy, size, size);
+    x.fillStyle = '#0b2545';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) x.fillRect(Math.round(ox + (c + quiet) * cell), Math.round(oy + (r + quiet) * cell), Math.ceil(cell), Math.ceil(cell));
+    x.lineWidth = 3; x.strokeStyle = '#c9a227'; x.strokeRect(ox - 8, oy - 8, size + 16, size + 16);
+  }
+
+  let cardURL = null;
+  $('btnSubmit').onclick = async () => {
+    $('btnSubmit').disabled = true;
+    try {
+      const c = await compose();
+      cardURL = c.toDataURL('image/jpeg', .95);
+      $('cardImg').src = cardURL; $('printImg').src = cardURL; show('card');
+    } finally { $('btnSubmit').disabled = false; }
+  };
+  $('btnPrint').onclick = () => { $('printImg').decode().then(() => window.print()); };
+  $('btnDownload').onclick = () => { const a = document.createElement('a'); a.href = cardURL; a.download = `ar-photobooth-${Date.now()}.jpg`; a.click(); };
+
+  // ?demo=1 → skip the camera and use a placeholder photo (for checking the print layout)
+  if (new URLSearchParams(location.search).has('demo')) {
+    const c = document.createElement('canvas'); c.width = 1600; c.height = Math.round(1600 / ratio()); const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 1600, c.height); g.addColorStop(0, '#13315c'); g.addColorStop(1, '#0b2545'); x.fillStyle = g; x.fillRect(0, 0, 1600, c.height);
+    x.fillStyle = '#e8c874'; x.font = '700 110px "Playfair Display", serif'; x.textAlign = 'center'; x.fillText('Your photo here', 800, c.height / 2 + 30);
+    photo = c; $('reviewImg').src = c.toDataURL('image/jpeg', .9); show('review');
+  } else startCam();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !stream) startCam(); });
+})();
+</script>
+</body>
+</html>
